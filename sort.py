@@ -94,20 +94,29 @@ def delete_arch_files(path):
 
 def file_list():
     lst = []
-    lst.append("|" + "=" * 50 + "|")
+    longest_element = ""
+    for key in dict_search_result:
+        for item in dict_search_result[key]:
+            if len(item) > len(longest_element):
+                longest_element = item
+    max_width = len(longest_element) + 2  # Добавляем небольшой отступ
+
+    lst.append("|" + "=" * max_width + "|")
     for category, value in dict_search_result.items():
-        lst.append("|{:^50}|".format(category))
-        lst.append("|" + "=" * 50 + "|")
+        lst.append("|{:^{width}}|".format(category, width=max_width))
+        lst.append("|" + "=" * max_width + "|")
         ext = "Extensions: "
         for extension in value[1]:
-            ext += extension + ", "
-        ext = ext[:-2]
-        lst.append("|{:<50}|".format(ext))
-        lst.append("|" + "-" * 50 + "|")
+            if len(ext) + len(extension) <= max_width:
+                ext += extension + ", "
+            else:
+                lst.append("|{:<{width}}|".format(ext[:-2], width=max_width))
+                ext = " " * len("Extensions: ") + extension + ", "
+        lst.append("|{:<{width}}|".format(ext[:-2], width=max_width))
+        lst.append("|" + "-" * max_width + "|")
         for element in value[0]:
-            lst.append("|{:<50}|".format(element))
-        lst.append("|" + "=" * 50 + "|")
-
+            lst.append("|{:<{width}}|".format(element, width=max_width))
+        lst.append("|" + "=" * max_width + "|")
     for i in lst:
         print(i)
 
@@ -187,7 +196,7 @@ def main():
     delete_arch_files(path)
     file_list()
 
-    return print("Программа завершила роботу.")
+    return "Программа завершила роботу."
 
 
 if __name__ == "__main__":
