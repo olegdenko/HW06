@@ -183,8 +183,8 @@ def sort_folder(path: Path) -> None:
 
 def main():
     try:
-        # path = Path(sys.argv[1])
-        path = Path("C:\\Testfolder")
+        path = Path(sys.argv[1])
+        # path = Path("C:\\Testfolder")
         print(f"Папка для сортування ", {path})
     except IndexError:
         return "Не вказана папка для сортування"
