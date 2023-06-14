@@ -95,28 +95,29 @@ def delete_arch_files(path):
 def file_list():
     lst = []
     longest_element = ""
-    for key in dict_search_result:
-        for item in dict_search_result[key]:
-            if len(item) > len(longest_element):
-                longest_element = item
-    max_width = len(longest_element) + 2  # Добавляем небольшой отступ
-
-    lst.append("|" + "=" * max_width + "|")
     for category, value in dict_search_result.items():
-        lst.append("|{:^{width}}|".format(category, width=max_width))
-        lst.append("|" + "=" * max_width + "|")
+        for element in value[0]:
+            if len(element) > len(longest_element):
+                longest_element = element
+        ext = "Extensions: " + ", ".join(value[1])
+        if len(ext) > len(longest_element):
+            longest_element = ext
+
+    oll_length = len(longest_element) + 2
+
+    lst.append("|" + "=" * oll_length + "|")
+    for category, value in dict_search_result.items():
+        lst.append("|{:^{length}}|".format(str(category), length=oll_length))
+        lst.append("|" + "=" * oll_length + "|")
         ext = "Extensions: "
         for extension in value[1]:
-            if len(ext) + len(extension) <= max_width:
-                ext += extension + ", "
-            else:
-                lst.append("|{:<{width}}|".format(ext[:-2], width=max_width))
-                ext = " " * len("Extensions: ") + extension + ", "
-        lst.append("|{:<{width}}|".format(ext[:-2], width=max_width))
-        lst.append("|" + "-" * max_width + "|")
+            ext += extension + ", "
+        ext = ext[:-2]
+        lst.append("|{:<{length}}|".format(ext, length=oll_length))
+        lst.append("|" + "-" * oll_length + "|")
         for element in value[0]:
-            lst.append("|{:<{width}}|".format(element, width=max_width))
-        lst.append("|" + "=" * max_width + "|")
+            lst.append("|{:<{length}}|".format(element, length=oll_length))
+        lst.append("|" + "=" * oll_length + "|")
     for i in lst:
         print(i)
 
@@ -136,54 +137,54 @@ def normalize(name: str) -> str:
 
 
 def move_file(file: Path, root_dir: Path, categorie: str) -> None:
+    ext = set()
+    global dict_search_result
     target_dir = root_dir.joinpath(categorie)
     if not target_dir.exists():
         print(f"Створюємо {target_dir}")
         target_dir.mkdir()
+
     if file.suffix.lower() in (".zip", ".tar", ".gz"):
         try:
             unpack_archive(file, target_dir)
         except shutil.ReadError:
             return
+
     new_name = target_dir.joinpath(f"{normalize(file.stem)}{file.suffix}")
     if new_name.exists():
         new_name = new_name.with_name(f"{new_name.stem}-{uuid.uuid4()}{file.suffix}")
     file.rename(new_name)
+    ext.add(file.suffix)
+
+    if categorie in dict_search_result:
+        dict_search_result[categorie][0].append(new_name.name)
+        dict_search_result[categorie][1].update(ext)
+    else:
+        dict_search_result[categorie] = [[new_name.name], ext]
 
 
-def get_categories(file: Path, dict_search_result) -> str:
+def get_categories(file: Path) -> str:
     ext = file.suffix.lower()
-
     for cat, exts in CATEGORIES.items():
         if ext in exts:
-            if cat in dict_search_result:
-                file_list = dict_search_result[cat][0]
-                if file.name in file_list:
-                    return cat
-                file_list.append(file.name)
-                dict_search_result[cat][1].add(ext)
-            else:
-                dict_search_result[cat] = [[file.name], {ext}]
             return cat
-
     return "Other"
 
 
 def sort_folder(path: Path) -> None:
-    global dict_search_result
     for item in path.glob("**/*"):
         # print(item)
         if item.is_dir() and item.name in EXCEPTION:
             return
         if item.is_file():
-            cat = get_categories(item, dict_search_result)
+            cat = get_categories(item)
             move_file(item, path, cat)
 
 
 def main():
     try:
-        path = Path(sys.argv[1])
-        # path = Path("C:\\Testfolder")
+        # path = Path(sys.argv[1])
+        path = Path("C:\\Testfolder")
         print(f"Папка для сортування ", {path})
     except IndexError:
         return "Не вказана папка для сортування"
